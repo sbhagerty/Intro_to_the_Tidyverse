@@ -1,0 +1,251 @@
+---
+title: "dplyr and ggplot2 exercises"
+---
+## Set up 
+
+```{r}
+library(tidyverse)
+library(survival)
+
+pbc <- pbc %>% mutate(
+  trt = case_when(
+    trt == 1 ~ "D-penicillmain",
+    trt == 2 ~ "placebo"
+  ),
+  stage = factor(stage)
+)
+```
+
+## An Introduction to our data
+
+
+```{r}
+pbc 
+```
+
+```{r}
+ToothGrowth
+```
+
+
+# Visualizing Data with `ggplot2`
+The example dataset
+```{r}
+ToothGrowth
+```
+
+
+Our first ggplot example
+
+```{r}
+ggplot(data=ToothGrowth)+
+  geom_point(mapping = aes(x=dose, y=len))
+```
+
+Adding `color`, `size`, and `shape` aesthetics to the graph for the different supplements
+
+```{r}
+ggplot(data = ToothGrowth) +
+  geom_point(mapping = aes(x = dose, y = len, col = supp, shape=supp, size=supp))
+```
+## ggplot Your Turn 
+
+In the code chunk below use the `pbc` data to build a point plot where the x axis is `time` and the y axis is `alk.phos`
+
+```{r}
+
+```
+
+Below build the graph again this time adding an aesthetic for `stage` and/or `trt`. Experiment with the different aesthetics (Hint: for geom_point the aesthetics are x, y, alpha, color, fill, group, shape, size, and stroke, you can find this out by typing `?geom_point into the console and reading the documentation that comes up in the help box at the bottom right of the IDE)
+```{r}
+
+```
+
+# GEOM Example
+To make a point plot
+```{r}
+ggplot(ToothGrowth)+
+     geom_point(mapping=aes(x=dose, y=len))
+```
+To make a line plot
+```{r}
+ggplot(ToothGrowth)+
+     geom_smooth(mapping=aes(x=dose, y=len))
+```
+
+# GEOM Your turn 
+
+Replace this scatterplot with one that draws boxplots. Use the cheatsheet. Try your best guess.
+
+```{r}
+ggplot(data = data) + 
+  geom_boxplot(mapping=aes(x=TREATMENT, y=GLUC))
+```
+
+# Layering Geoms
+```{r}
+ggplot(ToothGrowth) +
+  geom_jitter(aes(x=supp, y=len))+
+  geom_boxplot(aes(x=supp, y=len))
+  
+```
+
+
+```{r}
+ggplot(ToothGrowth, aes(x=supp, y=len)) + 
+  geom_boxplot()+
+  geom_jitter()
+```
+
+
+
+Additional ggplot layers can improve plot appearance
+```{r}
+ggplot(data = pbc) + 
+  geom_histogram(mapping = aes(x= age))+
+  xlab('Age')+
+  ylab('Number of Patients')+
+  theme_classic()
+```
+
+## ggplot take aways
+
+You can use this code template to make thousands of graphs with **ggplot2**.
+
+```{r eval = FALSE}
+ggplot(data = <DATA>) +
+  <GEOM_FUNCTION>(mapping = aes(<MAPPINGS>))
+```
+
+---
+# Transforming Data with `dplyr`
+
+#### Part 1, `select()`, `filter()`, `arrange()`
+
+**SELECT**
+Select the id column from pbc
+```{r}
+select(pbc, id)
+```
+The above code is the same as
+```{r}
+pbc %>% 
+  select(id)
+```
+
+You can use helpers with select, for example to select everything but the id and age
+```{r}
+pbc %>% 
+  select(-c(id,age))
+```
+You can select every column that mentions time with:
+```{r}
+pbc %>% 
+  select(contains('time'))
+```
+
+
+**FILTER**
+You can filter for patients who received the placebo
+```{r}
+pbc %>% 
+  filter(trt == 'placebo')
+```
+You can filter for patients between age 30 and 60
+```{r}
+pbc %>% 
+  filter(age>30, age<60)
+```
+We can exclude patients that got a transplant:
+```{r}
+pbc_filtered<-pbc %>% 
+  filter(status !=1) 
+```
+Women between age 30 and 60 are at high risk of pbc, can you filter the data to create a high_risk subset?
+```{r}
+high_risk <- pbc %>% filter(
+  # filter by sex, age
+)
+```
+
+Could you add `arrange` to the above code so the data are sorted by `alk.phos` value.
+
+#### Part 2: `mutate()`, `group_by()`, `summarize()`
+
+```{r}
+data <- tibble(
+  plan = c('a','a','b','b','a'),
+  weight_kg=c(96,87,104,61,131), 
+  height_cm=c(174,189,195,149,131))
+
+bmi <- data %>% mutate(bmi = weight_kg / ((height_cm)^2*.0001))
+```
+
+```{r}
+bmi %>% group_by(plan) %>% mutate(group_avg_height= mean(height_cm))
+```
+
+```{r}
+bmi %>% group_by(plan) %>% summarize(mean_bmi = mean(bmi), count= n())
+```
+*Practice*
+
+Take the `pbc` data set and group by stage, then summarize to get the average `alk.phos` value, number of observations, and 
+```{r}
+pbc %>% 
+  group_by(stage) %>% 
+  summarize(
+    mean_alk.phos= mean(alk.phos),
+    cases = n()
+  )
+```
+You might see mean_alk.phos is filled with NA values, that's because we had some missing values in our `pbc` dataset.  By default the `mean()` returns NA if the dataset has any missing values. We can override this by setting the argument `na.rm = TRUE` this tells the mean funciton to ignore missing values can compute mean based on whatever is present. 
+
+Change the code below so that we have a summary table of the number of patients in each stage for each sex. What variables are we grouping by and which are we summarizing? 
+
+```{r}
+pbc %>% 
+  group_by() %>% 
+  summarize(
+    
+  )
+```
+
+Open the data-transformations-cheatsheet, look at the summary functions. Try adding another summary function to the summary dataframe you created above. 
+
+### A few other handy dplyr tricks
+
+Case when lets you conditionally apply something, Here we conditionally assign the new spiders column present or absent based on coding in the original spiders column
+```{r}
+pbc <- pbc %>% mutate(
+  spiders = case_when(
+    spiders == 1 ~ "present",
+    spiders == 0 ~ "absent"
+  )
+)
+```
+
+Count the number of observations, even the number of observations by groups 
+
+```{r}
+pbc %>% 
+  count(sex)
+```
+
+```{r}
+pbc %>% 
+  count(sex,trt,stage)
+```
+***
+
+# dplyr Take aways
+
+* Extract variables with `select()`  
+* Extract cases with `filter()`  
+* Arrange cases, with `arrange()`  
+
+* Make tables of summaries with `summarise()`  
+* Make new variables, with `mutate()`  
+* Do groupwise operations with `group_by()`
+
+* Connect operations with `%>%` 
